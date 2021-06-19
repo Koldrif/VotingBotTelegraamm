@@ -20,6 +20,6 @@ cursor.execute(requestToGetAllPairs)
 AllPairs =  cursor.fetchall()
 
 
-for row in AllPairs:
+for row in rows:
     print("id: " , row[0] , " first_expr: " , row[1] , " second expr: " , row[2])
 

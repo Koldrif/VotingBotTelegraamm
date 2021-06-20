@@ -1,11 +1,11 @@
 import telebot
 import pymysql
 import pymysql.cursors
-from requests import Request
+from MySQLrequests import MySQLRequest
 
 # Инициализация
 TOKEN = r"1801737865:AAGQroqS0QitNBRVmqP58TQLWtjrl57CP38"
-bot = telebot.TeleBot(token=TOKEN)
+bot = telebot.TeleBot(TOKEN)
 dataBase_bot = pymysql.connect(
     host="remotemysql.com",
     user="5SbqamHdMU",
@@ -15,7 +15,7 @@ dataBase_bot = pymysql.connect(
 cursor = dataBase_bot.cursor()
 
 # Запрос на получение всех пар из таблицы
-cursor.execute(Request.getAllPairs)
+cursor.execute(MySQLRequest.getAllPairs)
 # Создать кортеж из данных в таблице
 AllPairs = cursor.fetchall()
 

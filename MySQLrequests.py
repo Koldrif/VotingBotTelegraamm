@@ -11,11 +11,16 @@ def addVoteToSecondExpr(id_dict):
 
 def getVotedIds(votedList):
     '''SELECT * FROM `5SbqamHdMU`.`link_table` WHERE `id_dictionary` = 234 OR 5345 OR ;'''
-    if len(votedList):
+    if len(votedList) == 0:
         print("votedList is empty")
         return "SELECT * FROM `5SbqamHdMU`.`link_table`"
+    if votedList is None:
+        print("votedList is None")
+        return "SELECT * FROM `5SbqamHdMU`.`link_table`"
+
+
     SQLRequest = '''SELECT * FROM `5SbqamHdMU`.`link_table` WHERE `id_dictionary` = '''
     for voted in votedList:
-        SQLRequest += voted[0] + " OR "
+        SQLRequest += str(voted[0]) + " OR `id_dictionary` = "
 
-    return SQLRequest[:len(SQLRequest) - 4] + ";"
+    return SQLRequest[:len(SQLRequest) - 22] + ";"

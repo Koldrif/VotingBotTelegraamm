@@ -78,13 +78,19 @@ def botSendSplitedMessage(message, CurrentUser):
     for ind in range(0, len(CurrentUser.VotesResult)):
         VotesSum = CurrentUser.VotesResult[ind][2] + \
             CurrentUser.VotesResult[ind][3]
-        longText += f'\nВ паре: \n" {CurrentUser.VotedPairs[ind][1]} \\ {CurrentUser.VotedPairs[ind][2]} " \n\n' \
+        tempString = f'\nВ паре: \n" {CurrentUser.VotedPairs[ind][1]} \\ {CurrentUser.VotedPairs[ind][2]} " \n\n' \
             f'  За первый вариант проголосовал {round((CurrentUser.VotesResult[ind][2] * 100 / VotesSum), 2)}%,' \
             f'\n  За второй вариант - {round((CurrentUser.VotesResult[ind][3] * 100 / VotesSum), 2)}%\n'
-    print(longText)
-    longText = util.split_string(longText, 2970)
-    for eachString in longText:
-        bot.send_message(CurrentUser.UserId, eachString)
+        if len(longText) + len(tempString) < 3000:
+            longText += tempString
+        else:
+            bot.send_message(CurrentUser.UserId, longText)
+            longText = tempString
+
+    # print(longText)
+    # longText = util.split_string(longText, 2978)
+    # for eachString in longText:
+    #     bot.send_message(CurrentUser.UserId, eachString)
 
 
 # Бот ловит комманду /start

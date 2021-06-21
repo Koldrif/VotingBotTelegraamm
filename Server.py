@@ -83,9 +83,13 @@ def botSendSplitedMessage(message, CurrentUser):
             f'\n  За второй вариант - {round((CurrentUser.VotesResult[ind][3] * 100 / VotesSum), 2)}%\n'
         if len(longText) + len(tempString) < 3000:
             longText += tempString
+            if ind == len(CurrentUser.VotesResult) - 1:
+                bot.send_message(CurrentUser.UserId, longText)
         else:
             bot.send_message(CurrentUser.UserId, longText)
             longText = tempString
+           
+                
 
     # print(longText)
     # longText = util.split_string(longText, 2978)

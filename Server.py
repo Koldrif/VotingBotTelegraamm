@@ -36,22 +36,9 @@ dataBase_bot = pymysql.connect(
 )
 cursor = dataBase_bot.cursor()
 
-# Запрос на получение всех пар словосочетнаий из таблицы
-cursor.execute(getAllPairs)
+# Инициализировать словарь активных пользователей
+UsersDict = {} #{ user_id : ### }
 
-# Создать кортеж из данных в таблице.
-# Формат: (id, first_expr, second_expr)
-AllPairs = cursor.fetchall()
-
-# Перевод кортежа в массив
-PairsList = []
-for item in AllPairs:
-    PairsList.append(item)
-
-VotedPairs = []
-
-# Взять случайную пару словосочетаний
-selectedPair = ()
 # Сделать кнопки управление для бота
 answerMarkup = types.ReplyKeyboardMarkup()
 answerMarkup.add('1', '2', 'Статистика', '/stop', '/start')
@@ -61,44 +48,26 @@ MarkupHide = types.ReplyKeyboardRemove()
 
 ''' Конец инициализации '''
 
-UsersDict = {} #{ user_id : ### }
 
 print("Log:\tБот включился")
 
+# Если пользователь не ввел /start
+def userDidntTypeStart(message):
+    '''
+    userDidntTypeStart(message)
 
-# Получить случайную пару из тех, что еще не использовались в голосовании
-def get_random_pair():
-    global selectedPair
-    randIndex = random.randrange(len(PairsList))
-    selectedPair = PairsList[randIndex]
-    print("Log:\tСгенерирована новая пара:\nPair: ", selectedPair)
-    PairsList.pop(randIndex)
-
-
-# Получить новую пару и предложить пользователю проголосовать
-def offerNewVote(message):
-    get_random_pair()
-    bot.send_message(message.from_user.id,
-                     f'Укажите вариант, который вам больше всего нравится:\n\n1. {selectedPair[1]}\n2. {selectedPair[2]}')
-
-
-def getStats(message, votedList):
-    Query = getVotedIds(votedList)
-    print(f"Log:\t{message.from_user.first_name} ввел комманду: [ /stop ]\nQuery is: ")
-    print(Query)
-    cursor.execute(Query)
-    result = cursor.fetchall()
-    return result
-
-
-def userDidntMadeAChoice(message):
+    Если пользователь не ввел /start
+    '''
     bot.send_message(message.from_user.id, 'Напишите { /start }')
 
-def botSendSplitedMessage(message):
-    pass
     
-
+# Отпрвить большое сообщение кусками
 def botSendSplitedMessage(message, CurrentUser):
+    '''
+    botSendSplitedMessage(message, CurrentUser)
+
+    Отпрвить большое сообщение кусками
+    '''
     longText = "Результаты:\n"
     for ind in range(0, len(CurrentUser.VotesResult)):
                     VotesSum = CurrentUser.VotesResult[ind][2] + CurrentUser.VotesResult[ind][3]
@@ -111,13 +80,17 @@ def botSendSplitedMessage(message, CurrentUser):
         bot.send_message(CurrentUser.UserId, eachString)
 
 
-
+# Бот ловит комманду /start
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    global selectedPair
+    '''
+    send_welcome(message)
+
+    Бот ловит комманду /start
+    '''
     global UsersDict
     
-    #offerNewVote(message)
+
     print("\nБот начал работу с пользователем: ", message.from_user.first_name)
     print("Log\tДобавление пользователя: ", message.from_user.id)
     try:
@@ -133,141 +106,108 @@ def send_welcome(message):
             print(f"User_id: \033[36m{item} \033[37m", " with name: \033[36m{ ", UsersDict[item].UserName, " }\033[37m")
 
 
-
+# Бот принимает любой текст
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    global selectedPair
-    global VotedPairs
-    global AllPairs
-    global PairsList
-    
-    
+    '''
+    get_text_messages(message)
+
+    Бот принимает любой текст
+    '''   
     if str(message.from_user.id) in UsersDict.keys():
         CurrentUser = UsersDict[str(message.from_user.id)]
    
         if message.text.lower() == '/stop' or len(CurrentUser.PairsList) == 0:
+            # Если закончились вопросы
             if len(CurrentUser.PairsList) == 0:
-                # TODO : Выводить сообщение, что вопросы кончились 
                 bot.send_message(CurrentUser.UserId, "Поздравляем! \n\nВы закончили тестирование!")
-                # CurrentUser = User(message, cursor)
-                # # Создать кортеж из данных в таблице.
-                # # Формат: (id, first_expr, second_expr)
-                # CurrentUser.AllPairs = cursor.fetchall()
-                
-                # Перевод кортежа в массив
-                PairsList = []
-                for item in AllPairs:
-                    PairsList.append(item)
-                VotedPairs = []
 
-            if len(CurrentUser.VotedPairs) == 0 or CurrentUser.VotedPairs == []:
-                # for item in CurrentUser.AllPairs:
-                #     CurrentUser.VotedPairs.append(item)
+            # Если пльзователь не голосовал
+            elif len(CurrentUser.VotedPairs) == 0 or CurrentUser.VotedPairs == []:
                 bot.send_message(CurrentUser.UserId, "Вы не проголосовали ни в одном вопросе!")
+
+            # Вывод результатов
             else:
                 print(CurrentUser.VotedPairs)
                 CurrentUser.getStats(message)
                 botSendSplitedMessage(message, CurrentUser)
-            # bot.send_message(message.from_user.id, "Результаты:")
-            # for ind in range(0, len(CurrentUser.VotesResult)):
-            #     VotesSum = CurrentUser.VotesResult[ind][2] + CurrentUser.VotesResult[ind][3]
-            #     bot.send_message(message.from_user.id, f'В паре: \n{CurrentUser.VotedPairs[ind][1]} \\ {CurrentUser.VotedPairs[ind][2]} \n' \
-            #                                         f'за первый вариант проголосовал {round((CurrentUser.VotesResult[ind][2] * 100 / VotesSum), 2)}% опрошенных, ' \
-            #                                         f'а за второй вариант - {round((CurrentUser.VotesResult[ind][3] * 100 / VotesSum), 2)}%')
+            # Обнулить список пар, за ктороые пользователь голосовал
             CurrentUser.VotedPairs = []
+            # Удалить пользователя из словаря
             UsersDict.pop(str(CurrentUser.UserId))
-            # bot.send_message(message.from_user.id, "Спрятаф клавиатуру", reply_markup=MarkupHide)
+        
+        # При выборе пользователем первого варианта
         elif message.text.lower() == '1':
-            # TODO: Сюда установить занос в first_expr_votes
-            #if selectedPair == ():
-                #userDidntMadeAChoice(message)
-            # elif len(VotedPairs) == 0 or VotedPairs == []:
-            #     for item in AllPairs:
-            #         VotedPairs.append(item)
-            #else:
                 print(f"Log:\t{message.from_user.first_name} выбрал первый вариант")
+                # Отправить в базу данных выбор пользователя
                 cursor.execute(addVoteToFirstExpr(CurrentUser.selectedPair[0]))
                 dataBase_bot.commit()
                 bot.send_message(message.from_user.id, 'Выбран первый вариант!')
+                # Добавить в список отвеченных опросов и предложить новый опрос
                 CurrentUser.VotedPairs.append(CurrentUser.selectedPair)
                 CurrentUser.offerNewVote(message, bot)
                 print()
-        elif message.text.lower() == '2':
-            # TODO: Сюды ебануть занос в second_expr_votes
-            #if selectedPair == ():
-                #userDidntMadeAChoice(message)
-            # elif len(VotedPairs) == 0 or VotedPairs == []:
-            #     for item in AllPairs:
-            #         VotedPairs.append(item)
-            #else:
+                
+        # При выборе пользователем второго варианта 
+        elif message.text.lower() == '2':          
                 print(f"Log:\t{message.from_user.first_name} выбрал второй вариант")
+                # Отправить в базу данных выбор пользователя
                 cursor.execute(addVoteToSecondExpr(CurrentUser.selectedPair[0]))
                 dataBase_bot.commit()
                 bot.send_message(message.from_user.id, 'Выбран второй вариант!')
+                # Добавить в список отвеченных опросов и предложить новый опрос
                 CurrentUser.VotedPairs.append(CurrentUser.selectedPair)
                 CurrentUser.offerNewVote(message, bot)
                 print()
-
+                
+        # При выборе пользователем варианта статистика
         elif message.text.lower() == 'статистика':
-            # TODO: Сюды ебануть запрос ВСЕЙ статистики
-            
+            # Получить все результаты по голосоанию
             CurrentUser.getAllStats(message)
             botSendSplitedMessage(message, CurrentUser)
-            # bot.send_message(message.from_user.id, "Результаты:")
-            # for ind in range(0, len(AllVotesResult)):
-            #     VotesSum = AllVotesResult[ind][2] + AllVotesResult[ind][3]
-            #     bot.send_message(message.from_user.id, f'В паре: \n{AllPairs[ind][1]} \\ {AllPairs[ind][2]} \n' \
-            #                                         f'за первый вариант проголосовал {round((AllVotesResult[ind][2] * 100 / VotesSum), 2)}% опрошенных, ' \
-            #                                         f'а за второй вариант - {round(AllVotesResult[ind][3] * 100 / VotesSum, 2)}%')
-            
+            # Удалить пользователя из листа активных пользователей
             UsersDict.pop(str(CurrentUser.UserId))
         
+        # При выборе пользователем не обработанных результатов
         else:
             bot.send_message(message.from_user.id, 'Не понимаю, что это значит.')
 
-        #print(CurrentUser.VotedPairs)
+    # При выборе статистики без нажатия на кнопку /start
     elif message.text.lower() == 'статистика':
-        # TODO: Сюды ебануть запрос ВСЕЙ статистики
         StatUser = User(message, cursor, bot, True)
         StatUser.getAllStats(message)
         botSendSplitedMessage(message, StatUser)
-        # bot.send_message(message.from_user.id, "Результаты:")
-        # for ind in range(0, len(AllVotesResult)):
-        #     VotesSum = AllVotesResult[ind][2] + AllVotesResult[ind][3]
-        #     bot.send_message(message.from_user.id, f'В паре: \n{AllPairs[ind][1]} \\ {AllPairs[ind][2]} \n' \
-        #                                         f'за первый вариант проголосовал {round((AllVotesResult[ind][2] * 100 / VotesSum), 2)}% опрошенных, ' \
-        #                                         f'а за второй вариант - {round(AllVotesResult[ind][3] * 100 / VotesSum, 2)}%')
         
-        #UsersDict.pop(str(StatUser.UserId))
+    # В случае, если пользователь не ввел /start 
+    # и не нажал на кнопку статистики
     else:
-        userDidntMadeAChoice(message)
+        userDidntTypeStart(message)
 
-
-# for row in AllPairs:
-# #    print("id: ", row[0], " first_expr: ", row[1], " second expr: ", row[2])
 def botStartFunc():
-    # try:
+    '''
+    botStartFunc()
+
+    Запуск бота
+    '''
     bot.polling()
 
+
 def wakeBD():
+    '''
+    wakeBD()
+
+    Разбудить базу данных
+    '''
     while True:
         dataBase_bot.ping()
         print("Log:\tБаза данных: подклюение обновлено")
         time.sleep(10)
     pass
 
-"""Начало программы"""
+#             """Начало программы"""
+# Создать поток для пробуждение БД
 bdThread = threading.Thread(name="targetBdThread", target=wakeBD, daemon=True)
+# Запустить поток для пробуждение БД
 bdThread.start()
+# Запустить бота
 botStartFunc() 
-
-
-    
-
-#     except Exception:
-#         print("Oh shit, again, we've got an exception")
-#         botStartFunc()
-
-
-
-
